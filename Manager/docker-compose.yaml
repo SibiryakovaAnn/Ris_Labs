@@ -1,0 +1,37 @@
+version: '3.8'
+services:
+  manager:
+    image: manager
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./Manager/src/main/resources/static:/resources/static
+      - ./manager_db:/app/db
+    depends_on:
+      - worker-0
+      - worker-1
+      - worker-2
+
+  worker-0:
+    image: worker
+    environment:
+      - WORKER_ID=0
+    ports:
+      - "8000:8000"
+
+  worker-1:
+    image: worker
+    environment:
+      - WORKER_ID=1
+    ports:
+      - "8001:8000"
+
+  worker-2:
+    image: worker
+    environment:
+      - WORKER_ID=2
+    ports:
+      - "8002:8000"
+
+volumes:
+  manager_db:

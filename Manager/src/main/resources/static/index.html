@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrackHash Client</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .container { display: flex; flex-direction: column; gap: 15px; }
+        .input-group { display: flex; flex-direction: column; gap: 5px; }
+        input, button { padding: 8px; font-size: 16px; }
+        button { cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 4px; }
+        button:hover { background-color: #45a049; }
+        #result { margin-top: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; min-height: 50px; }
+        .status { margin-top: 10px; font-weight: bold; }
+        /* Progress bar styles */
+        .progress-container { width: 100%; background: #eee; border-radius: 4px; height: 20px; overflow: hidden; margin-top: 10px; display: none; }
+        .progress-bar { width: 0; height: 100%; background: #4caf50; transition: width 0.3s ease; }
+    </style>
+</head>
+<body>
+<h1>CrackHash Client</h1>
+<div class="container">
+    <div class="input-group">
+        <label for="hash">MD5 Hash:</label>
+        <input type="text" id="hash" placeholder="Enter MD5 hash">
+    </div>
+    <div class="input-group">
+        <label for="maxLength">Max Length:</label>
+        <input type="number" id="maxLength" min="1" max="8" value="4">
+    </div>
+    <button id="submitBtn">Crack Hash</button>
+
+    <div class="input-group" id="statusSection" style="display: none;">
+        <label for="requestId">Request ID:</label>
+        <input type="text" id="requestId" readonly>
+        <button id="checkStatusBtn">Check Status</button>
+        <div class="status" id="statusDisplay">Status: </div>
+    </div>
+
+    <div class="progress-container">
+        <div id="progressBar" class="progress-bar"></div>
+        <span id="progressPercentage" class="progress-percentage">0%</span>
+    </div>
+
+    <div id="result"></div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
