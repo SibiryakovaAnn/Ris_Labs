@@ -19,13 +19,24 @@ import java.util.concurrent.TimeUnit;
 public class CrackHashService {
     private static final Logger LOGGER = LoggerFactory.getLogger(CrackHashService.class);
 
+
     @Value("${worker.count}")
     private int workerCount;
+
+    @Value("${task.timeout}")
+    private long timeoutDuration;
+
+    @Value("${worker.base-url}")
+    private String workerBaseUrl;
+
+    @Value("${worker.task-path}")
+    private String workerTaskPath;
+
 
     private final CrackHashData crackHashData;
     private final HashRepository hashRepository;
     private final List<String> alphabet = new ArrayList<>();
-    private static final long TIMEOUT_DURATION = 600;
+    //private static final long TIMEOUT_DURATION = 600;
 
     public CrackHashService(CrackHashData crackHashData, HashRepository hashRepository) {
         this.crackHashData = crackHashData;
@@ -83,11 +94,13 @@ public class CrackHashService {
             request.setPartNumber(partNumber);
             request.setAlphabet(workerAlphabet);
 
-            String workerUrl = "http://worker-" + partNumber + ":8000/internal/api/worker/hash/crack/task";
+            String workerUrl = workerBaseUrl.replace("{id}", String.valueOf(partNumber)) + workerTaskPath;
+
+            //String workerUrl = "http://worker-" + partNumber + ":8000/internal/api/worker/hash/crack/task";
             restTemplate.postForObject(workerUrl, request, Void.class);
         }
 
-        CompletableFuture.delayedExecutor(TIMEOUT_DURATION, TimeUnit.SECONDS)
+        CompletableFuture.delayedExecutor(timeoutDuration, TimeUnit.SECONDS)
                 .execute(() -> {
                     if (crackHashData.getStatus(id) == StatusEnum.IN_PROGRESS) {
                         crackHashData.setStatus(id, StatusEnum.ERROR);

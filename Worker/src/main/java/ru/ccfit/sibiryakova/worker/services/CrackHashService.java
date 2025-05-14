@@ -3,6 +3,7 @@ package ru.ccfit.sibiryakova.worker.services;
 import org.paukov.combinatorics3.Generator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -19,6 +20,25 @@ import java.util.concurrent.atomic.AtomicLong;
 @Service
 public class CrackHashService {
     private static final Logger LOGGER = LoggerFactory.getLogger(CrackHashService.class);
+
+    @Value("${hash.algorithm}")
+    private String hashAlgorithm;
+
+    @Value("${hash.zero-padding}")
+    private int zeroPadding;
+
+    @Value("${hash.check.batch-size}")
+    private int checkBatchSize;
+
+    @Value("${manager.base-url}")
+    private String managerBaseUrl;
+
+    @Value("${manager.response-path}")
+    private String responsePath;
+
+    @Value("${manager.progress-path}")
+    private String progressPath;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     public void managerTask(CrackHashManagerRequest request) {
@@ -49,7 +69,6 @@ public class CrackHashService {
         }
     }
 
-
     private void generateCombinations(List<String> alphabet, int maxLength,
                                       String current, String targetHash,
                                       List<String> results, String requestId) {
@@ -63,19 +82,19 @@ public class CrackHashService {
         for (String s : alphabet) {
             generateCombinations(alphabet, maxLength, current + s, targetHash, results, requestId);
 
-            // Отправляем обновление прогресса каждые 100 комбинаций
-            if (current.length() == 0 && results.size() % 100 == 0) {
-                updateProgress(requestId, 100);
+            if (current.length() == 0 && results.size() % checkBatchSize == 0) {
+                updateProgress(requestId, checkBatchSize);
             }
         }
     }
 
     private void updateProgress(String requestId, int count) {
         try {
-            String url = "http://manager:8080/internal/api/manager/progress/update";
+            String url = managerBaseUrl + progressPath;
             restTemplate.postForObject(url,
                     Map.of("requestId", requestId, "count", count),
                     Void.class);
+            LOGGER.debug("Progress updated for request {}", requestId);
         } catch (Exception e) {
             LOGGER.error("Failed to update progress: {}", e.getMessage());
         }
@@ -83,13 +102,13 @@ public class CrackHashService {
 
     private boolean checkHash(String word, String targetHash) {
         try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
+            MessageDigest md = MessageDigest.getInstance(hashAlgorithm);
             byte[] digest = md.digest(word.getBytes());
             BigInteger no = new BigInteger(1, digest);
-            String hashText = String.format("%032x", no);
+            String hashText = String.format("%0" + zeroPadding + "x", no);
             return targetHash.equals(hashText);
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("MD5 algorithm not found", e);
+            throw new RuntimeException(hashAlgorithm + " algorithm not found", e);
         }
     }
 
@@ -100,8 +119,7 @@ public class CrackHashService {
             response.setPartNumber(partNumber);
             response.setAnswers(answers != null ? answers : Collections.emptyList());
 
-            String url = "http://manager:8080/internal/api/manager/hash/crack/request";
-
+            String url = managerBaseUrl + responsePath;
             restTemplate.postForObject(url, response, Void.class);
 
             LOGGER.info("Worker-{} sent response for task {} ({} matches)",
