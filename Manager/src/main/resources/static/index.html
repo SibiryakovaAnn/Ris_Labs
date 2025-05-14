@@ -11,11 +11,35 @@
         input, button { padding: 8px; font-size: 16px; }
         button { cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 4px; }
         button:hover { background-color: #45a049; }
-        #result { margin-top: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; min-height: 50px; }
+        #result { margin-top: 20px; padding: 10px; border-radius: 4px; min-height: 50px; }
         .status { margin-top: 10px; font-weight: bold; }
         /* Progress bar styles */
-        .progress-container { width: 100%; background: #eee; border-radius: 4px; height: 20px; overflow: hidden; margin-top: 10px; display: none; }
-        .progress-bar { width: 0; height: 100%; background: #4caf50; transition: width 0.3s ease; }
+        .progress-container {
+            width: 100%;
+            background: #eee;
+            border-radius: 4px;
+            height: 20px;
+            overflow: hidden;
+            margin-top: 10px;
+            display: none;
+            position: relative;
+        }
+        .progress-bar {
+            width: 0;
+            height: 100%;
+            background: #4caf50;
+            transition: width 0.3s ease;
+        }
+        .progress-percentage {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            color: #333;
+            font-size: 12px;
+        }
+        .error { color: red; border: 1px solid red; }
+        .success { color: green; border: 1px solid green; }
     </style>
 </head>
 <body>
@@ -43,7 +67,7 @@
         <span id="progressPercentage" class="progress-percentage">0%</span>
     </div>
 
-    <div id="result"></div>
+    <div id="result" class=""></div>
 </div>
 <script src="app.js"></script>
 </body>

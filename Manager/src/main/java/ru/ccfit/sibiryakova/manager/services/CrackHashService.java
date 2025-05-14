@@ -42,20 +42,32 @@ public class CrackHashService {
         this.crackHashData = crackHashData;
         this.hashRepository = hashRepository;
         generateAlphabet();
-        restoreRequests();
     }
 
-    private void restoreRequests() {
+    @PostConstruct
+    public void init() {
+        restoreUnfinishedTasks();
+    }
+
+    private void restoreUnfinishedTasks() {
         try {
-            List<Hash> hashes = hashRepository.findAll();
-            for (Hash hash : hashes) {
-                String id = UUID.randomUUID().toString();
-                crackHashData.setStatus(id, StatusEnum.IN_PROGRESS);
-                CompletableFuture.runAsync(() -> sendWorkerRequests(id, hash));
-                LOGGER.info("Restored request for hash: {}", hash.hash());
+            List<HashRepository.UnfinishedTask> unfinishedTasks = hashRepository.findAllUnfinished();
+            LOGGER.info("Найдено {} незавершенных задач", unfinishedTasks.size());
+
+            for (HashRepository.UnfinishedTask task : unfinishedTasks) {
+                String id = task.getRequestId();
+                LOGGER.info("Восстанавливаем задачу с ID: {}", id);
+                //StatusEnum currentStatus = crackHashData.getStatus(id);
+
+                //if (currentStatus == StatusEnum.ERROR || currentStatus == StatusEnum.PARTIAL) {
+                    crackHashData.setStatus(id, StatusEnum.IN_PROGRESS);
+                    Hash hash = new Hash(task.getHash(), task.getMaxLength());
+                    // Повторно отправляем задачу воркерам
+                    CompletableFuture.runAsync(() -> sendWorkerRequests(id, hash));
+                //}
             }
         } catch (Exception e) {
-            LOGGER.error("Failed to restore requests", e);
+            LOGGER.error("Ошибка при восстановлении незавершенных задач", e);
         }
     }
 
@@ -77,6 +89,7 @@ public class CrackHashService {
     }
 
     private void sendWorkerRequests(String id, Hash hash) {
+        LOGGER.info("Sending task {} to workers (hash: {}, maxLength: {})", id, hash.hash(), hash.maxLength());
         RestTemplate restTemplate = new RestTemplate();
         int partCount = workerCount;
         int chunkSize = (int) Math.ceil((double) alphabet.size() / partCount);
@@ -95,15 +108,29 @@ public class CrackHashService {
             request.setAlphabet(workerAlphabet);
 
             String workerUrl = workerBaseUrl.replace("{id}", String.valueOf(partNumber)) + workerTaskPath;
-
+            try {
+                restTemplate.postForObject(workerUrl, request, Void.class);
+                LOGGER.info("Задача отправлена воркеру {} для запроса {}", partNumber, id);
+            } catch (Exception e) {
+                LOGGER.error("Ошибка отправки задачи воркеру {} для запроса {}", partNumber, id, e);
+            }
             //String workerUrl = "http://worker-" + partNumber + ":8000/internal/api/worker/hash/crack/task";
-            restTemplate.postForObject(workerUrl, request, Void.class);
+            //restTemplate.postForObject(workerUrl, request, Void.class);
         }
 
         CompletableFuture.delayedExecutor(timeoutDuration, TimeUnit.SECONDS)
                 .execute(() -> {
-                    if (crackHashData.getStatus(id) == StatusEnum.IN_PROGRESS) {
-                        crackHashData.setStatus(id, StatusEnum.ERROR);
+                    StatusEnum currentStatus = crackHashData.getStatus(id);
+                    if (currentStatus == StatusEnum.IN_PROGRESS) {
+                        int responses = crackHashData.getWorkerCount(id);
+                        if (responses > 0 && responses < workerCount) {
+                            crackHashData.setStatus(id, StatusEnum.PARTIAL);
+                            LOGGER.info("Task {} marked PARTIAL: timeout reached with {} of {} responses",
+                                    id, responses, workerCount);
+                        } else {
+                            crackHashData.setStatus(id, StatusEnum.ERROR);
+                            LOGGER.info("Task {} marked ERROR: timeout reached with insufficient responses", id);
+                        }
                     }
                 });
     }
@@ -126,7 +153,9 @@ public class CrackHashService {
     }
 
     private void generateAlphabet() {
+        alphabet.clear();
         for (char c = 'a'; c <= 'z'; c++) alphabet.add(String.valueOf(c));
         for (int i = 0; i <= 9; i++) alphabet.add(String.valueOf(i));
+        LOGGER.info("Generated alphabet: {}", alphabet);
     }
 }

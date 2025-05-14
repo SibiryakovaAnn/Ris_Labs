@@ -2,6 +2,7 @@ package ru.ccfit.sibiryakova.manager.repository;
 
 import org.springframework.stereotype.Repository;
 import ru.ccfit.sibiryakova.manager.models.Hash;
+import ru.ccfit.sibiryakova.manager.models.StatusEnum;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -48,6 +49,7 @@ public class HashRepository {
         }
     }
 
+
     public void remove(String requestId) {
         String sql = "DELETE FROM crack_hash WHERE request_id = ?";
         try (Connection conn = getConnection();
@@ -77,6 +79,51 @@ public class HashRepository {
             throw new RuntimeException("Failed to load requests", e);
         }
         return results;
+    }
+
+    public List<UnfinishedTask> findAllUnfinished() {
+        List<UnfinishedTask> results = new ArrayList<>();
+        String sql = "SELECT request_id, hash, max_length FROM crack_hash";
+
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                results.add(new UnfinishedTask(
+                        rs.getString("request_id"),
+                        rs.getString("hash"),
+                        rs.getInt("max_length")
+                ));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Не удалось загрузить незавершенные задачи", e);
+        }
+        return results;
+    }
+
+    public static class UnfinishedTask {
+        private final String requestId;
+        private final String hash;
+        private final int maxLength;
+
+        public UnfinishedTask(String requestId, String hash, int maxLength) {
+            this.requestId = requestId;
+            this.hash = hash;
+            this.maxLength = maxLength;
+        }
+
+        public String getRequestId() {
+            return requestId;
+        }
+
+        public String getHash() {
+            return hash;
+        }
+
+        public int getMaxLength() {
+            return maxLength;
+        }
     }
 
 }

@@ -82,9 +82,10 @@ public class CrackHashService {
         for (String s : alphabet) {
             generateCombinations(alphabet, maxLength, current + s, targetHash, results, requestId);
 
+            /*
             if (current.length() == 0 && results.size() % checkBatchSize == 0) {
                 updateProgress(requestId, checkBatchSize);
-            }
+            } */
         }
     }
 
