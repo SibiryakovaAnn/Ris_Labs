@@ -33,17 +33,10 @@ docker-compose.override.yml
 gradle-app.setting
 build/
 
-# Воркер и менеджер (специфичные файлы)
+# Воркер и менеджер
 Manager/bin/
 Manager/build/
 Worker/bin/
 Worker/build/
-
-# Node.js (если используется)
-node_modules/
-npm-debug.log
-
-# IDE
-.vscode/
-*.swp
-*.swo
+Manager/.DS_Store
+Worker/.DS_Store
