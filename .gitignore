@@ -1,0 +1,49 @@
+# Общие системные файлы
+.DS_Store
+.idea/
+*.iml
+*.log
+*.swp
+Thumbs.db
+
+# Бинарные файлы и сборки
+bin/
+build/
+out/
+target/
+*.jar
+*.war
+*.ear
+
+# Логи и временные файлы
+logs/
+*.log
+*.tmp
+
+# Базы данных
+*.db
+*.sqlite
+/db/
+
+# Docker
+docker-compose.override.yml
+
+# Gradle
+.gradle/
+gradle-app.setting
+build/
+
+# Воркер и менеджер (специфичные файлы)
+Manager/bin/
+Manager/build/
+Worker/bin/
+Worker/build/
+
+# Node.js (если используется)
+node_modules/
+npm-debug.log
+
+# IDE
+.vscode/
+*.swp
+*.swo
